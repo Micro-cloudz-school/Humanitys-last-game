@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humanity's Last Exam</title>
+</head>
+<body>
+<div id="title-screen" class="screen active">
+  <h1>HUMANITY'S LAST EXAM</h1>
+  <button id="start-btn">START</button>
+</div>
+  <style>body {
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  background: linear-gradient(120deg, #ff9a9e, #fad0c4);
+  text-align: center;
+  color: #333;
+}
+
+.screen { display: none; padding: 50px; }
+.screen.active { display: block; }
+
+button { font-size: 20px; padding: 10px 20px; cursor: pointer; }
+
+#ai-answer { text-align: left; background: #fff; padding: 10px; border-radius: 10px; }
+</style>
+
+<div id="question-screen" class="screen hidden">
+  <h2>Enter your Question:</h2>
+  <input type="text" id="question-input" placeholder="Destroy humanity with your question">
+  <h2>Your Answer:</h2>
+  <input type="text" id="answer-input" placeholder="Your fake answer">
+  <button id="submit-btn">SUBMIT TO AI</button>
+  <p id="status"></p>
+</div>
+
+<div id="ai-screen" class="screen hidden">
+  <h2>AI Responds:</h2>
+  <pre id="ai-answer"></pre>
+  <p id="humor"></p>
+  <p id="clever"></p>
+  <p id="hardness"></p>
+  <button id="next-btn">NEXT</button>
+</div>
+
+<script>const screens = {
+  title: document.getElementById('title-screen'),
+  question: document.getElementById('question-screen'),
+  ai: document.getElementById('ai-screen')
+};
+
+const startBtn = document.getElementById('start-btn');
+const submitBtn = document.getElementById('submit-btn');
+const nextBtn = document.getElementById('next-btn');
+
+const questionInput = document.getElementById('question-input');
+const answerInput = document.getElementById('answer-input');
+
+const aiAnswerDiv = document.getElementById('ai-answer');
+const humorDiv = document.getElementById('humor');
+const cleverDiv = document.getElementById('clever');
+const hardnessDiv = document.getElementById('hardness');
+const statusP = document.getElementById('status');
+
+function showScreen(screen) {
+  Object.values(screens).forEach(s => s.classList.add('hidden'));
+  screen.classList.add('active');
+}
+
+startBtn.addEventListener('click', () => showScreen(screens.question));
+nextBtn.addEventListener('click', () => {
+  questionInput.value = '';
+  answerInput.value = '';
+  aiAnswerDiv.textContent = '';
+  humorDiv.textContent = '';
+  cleverDiv.textContent = '';
+  hardnessDiv.textContent = '';
+  statusP.textContent = '';
+  showScreen(screens.question);
+});
+
+submitBtn.addEventListener('click', async () => {
+  const question = questionInput.value;
+  const humanAnswer = answerInput.value;
+
+  if(!question || !humanAnswer) return alert("Fill both!");
+
+  statusP.textContent = "Sending to AI... chaos incoming!";
+
+  // Hugging Face endpoint
+  const url = "https://hf.space/embed/ybelkada/guanaco-7b/api/predict/";
+
+
+  // Prompt tells AI to give answer AND rate human
+  const prompt = `
+Answer the question: "${question}"
+Then rate this human answer: "${humanAnswer}" 
+on Humor, Cleverness, Hardness from 1-10. Be sarcastic and chaotic.
+Format like this:
+AI Answer: ...
+Humor: x/10
+Cleverness: x/10
+Hardness: x/10
+`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: [prompt] })
+    });
+
+    const result = await response.json();
+    const aiText = result.data[0]; // AI output
+
+    // Basic parsing example
+    const match = aiText.match(/Humor\s*(\d+)/i);
+    aiAnswerDiv.textContent = aiText;
+    humorDiv.textContent = "Humor: " + (match ? match[1] : "??") + "/10";
+    cleverDiv.textContent = aiText.match(/Cleverness\s*(\d+)/i) ? "Cleverness: " + aiText.match(/Cleverness\s*(\d+)/i)[1]+"/10" : "";
+    hardnessDiv.textContent = aiText.match(/Hardness\s*(\d+)/i) ? "Hardness: " + aiText.match(/Hardness\s*(\d+)/i)[1]+"/10" : "";
+
+    showScreen(screens.ai);
+    statusP.textContent = "";
+  } catch(err) {
+    statusP.textContent = "AI refused to answer. Chaos is delayed!";
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>
